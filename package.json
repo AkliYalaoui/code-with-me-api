@@ -1,16 +1,33 @@
 {
-  "name": "api",
+  "name": "code-with-me-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "\"# code-with-me-api\"",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AkliYalaoui/code-with-me-api.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AkliYalaoui/code-with-me-api/issues"
+  },
+  "homepage": "https://github.com/AkliYalaoui/code-with-me-api#readme",
   "dependencies": {
-    "express": "^4.17.1",
-    "mongoose": "^6.0.10"
+    "bcrypt": "^5.0.1",
+    "colors": "^1.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.17.3",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.2.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
   }
 }
