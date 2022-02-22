@@ -31,7 +31,7 @@ const verifyRegister = (req,res,next) =>{
 const verifyLogin = (req,res,next) =>{
     const {email,password} = req.body;
     const error = {};
-
+    
     if(!email){
        error.email = "Email is required and must be a valid email";
     }

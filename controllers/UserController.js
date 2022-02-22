@@ -40,6 +40,7 @@ const registerUser = async (req, res) => {
     const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
 
     res.status(201).json({
+      status : 201,
       message: "User created successfully",
       user: {
         _id: user._id,
@@ -49,6 +50,7 @@ const registerUser = async (req, res) => {
       },
     });
   } catch (err) {
+    console.log(err);
     res.status(500).json({
       status: 500,
       message: "something went wrong",
@@ -79,6 +81,7 @@ const loginUser = async (req, res) => {
     const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
 
     res.status(200).json({
+      status : 200,
       message: "User logged in successfully",
       user: {
         _id: user._id,
@@ -89,28 +92,40 @@ const loginUser = async (req, res) => {
     });
   } catch (err) {
     console.log(err);
+    res.status(500).json({
+      status: 500,
+      message: "something went wrong",
+    });
   }
 };
 
 const getProfile = async (req, res) => {
-  const id = req.params.id;
+  try {
+    const id = req.params.id;
 
-  if (!id) {
-    return res.status(404).json({
-      status: 404,
-      message: "User not found",
+    if (!id) {
+      return res.status(404).json({
+        status: 404,
+        message: "User not found",
+      });
+    }
+
+    const user = await User.findById(id, { password: 0 });
+    if (!user) {
+      return res.status(404).json({
+        status: 404,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json(user);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      status: 500,
+      message: "something went wrong",
     });
   }
-
-  const user = await User.findById(id, { password: 0 });
-  if (!user) {
-    return res.status(404).json({
-      status: 404,
-      message: "User not found",
-    });
-  }
-
-  res.status(200).json(user);
 };
 
 module.exports = { registerUser, loginUser, getProfile };
