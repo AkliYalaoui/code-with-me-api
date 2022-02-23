@@ -1,5 +1,7 @@
 const Project = require("../models/Project.js");
 const User = require("../models/User.js");
+const fs = require("fs");
+const path = require("path");
 
 const createProject = async (req, res) => {
   try {
@@ -110,8 +112,13 @@ const addContributer = async (req, res) => {
 const getAllProjects = async (req, res) => {
   try {
     const allProjects = await Project.find();
-    const projects =  allProjects.filter(project =>{
-      return project.userId.toString() === req.userId || project.contributers.some(contributer => contributer._id.toString() === req.userId)
+    const projects = allProjects.filter((project) => {
+      return (
+        project.userId.toString() === req.userId ||
+        project.contributers.some(
+          (contributer) => contributer._id.toString() === req.userId
+        )
+      );
     });
 
     res.status(200).json({
@@ -133,7 +140,7 @@ const updateProjectContent = async (req, res) => {
     const { html, css, js } = req.body;
     const projectId = req.params.projectId;
 
-    if (!html && !css && !js) {
+    if (html == undefined && css == undefined && js == undefined) {
       return res.status(400).json({
         status: 400,
         message: "Bad request, html css and js must one of them be included",
@@ -147,10 +154,14 @@ const updateProjectContent = async (req, res) => {
       });
     }
 
-
-    const allProjects = await Project.find({_id: projectId});
-    const project =  allProjects.filter(project =>{
-      return project.userId.toString() === req.userId || project.contributers.some(contributer => contributer._id.toString() === req.userId)
+    const allProjects = await Project.find({ _id: projectId });
+    const project = allProjects.filter((project) => {
+      return (
+        project.userId.toString() === req.userId ||
+        project.contributers.some(
+          (contributer) => contributer._id.toString() === req.userId
+        )
+      );
     });
 
     if (project.length === 0) {
@@ -197,9 +208,14 @@ const getProjectById = async (req, res) => {
       });
     }
 
-    const allProjects = await Project.find({_id: projectId});
-    const project =  allProjects.filter(project =>{
-      return project.userId.toString() === req.userId || project.contributers.some(contributer => contributer._id.toString() === req.userId)
+    const allProjects = await Project.find({ _id: projectId });
+    const project = allProjects.filter((project) => {
+      return (
+        project.userId.toString() === req.userId ||
+        project.contributers.some(
+          (contributer) => contributer._id.toString() === req.userId
+        )
+      );
     });
 
     if (project.length === 0) {
@@ -209,11 +225,83 @@ const getProjectById = async (req, res) => {
           "something went wrong, Couldn't find the project you searching for",
       });
     }
-    
+
     res.status(200).json({
       status: 200,
       message: "Project retreived successfully",
-      project : project[0],
+      project: project[0],
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      status: 500,
+      message:
+        "something went wrong, Couldn't find the project you searching for",
+    });
+  }
+};
+const downloadProject = async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+
+    if (!projectId) {
+      return res.status(404).json({
+        status: 404,
+        message:
+          "something went wrong, Couldn't find the project you searching for",
+      });
+    }
+
+    const allProjects = await Project.find({ _id: projectId });
+    const project = allProjects.filter((project) => {
+      return (
+        project.userId.toString() === req.userId ||
+        project.contributers.some(
+          (contributer) => contributer._id.toString() === req.userId
+        )
+      );
+    });
+
+    if (project.length === 0) {
+      return res.status(404).json({
+        status: 404,
+        message:
+          "something went wrong, Couldn't find the project you searching for",
+      });
+    }
+
+    const content = `
+    <html>
+    <body>${project[0].html}</body>
+    <style>${project[0].css}</style>
+    <script>${project[0].js}</script>
+    </html>
+  `;
+    const fileName = `./data/${projectId}.html`;
+
+    fs.writeFile(fileName, content, (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(404).json({
+          status: 404,
+          message: "something went wrong, Failed To Download your project",
+        });
+      }
+
+      res.download(fileName,"project.html",function(err){
+        if(err){
+          console.log(err);
+          return res.status(404).json({
+            status: 404,
+            message: "something went wrong, Failed To Download your project",
+          });
+        }
+        fs.unlink(fileName, function (err) {
+          if (err) return console.log(err);
+          console.log("file deleted successfully");
+        });
+      });
+
     });
   } catch (err) {
     console.log(err);
@@ -231,4 +319,5 @@ module.exports = {
   addContributer,
   getAllProjects,
   updateProjectContent,
+  downloadProject,
 };
