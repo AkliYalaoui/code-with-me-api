@@ -19,7 +19,7 @@ const createProject = async (req, res) => {
     }
 
     const project = await Project.create({
-      userId : req.userId,  
+      userId: req.userId,
       title: title.trim(),
       description: description.trim(),
       html: html ? html.trim() : "",
@@ -32,12 +32,12 @@ const createProject = async (req, res) => {
     }
 
     res.status(201).json({
-      status: 201,  
-      message:"project created successfully",
-      project
+      status: 201,
+      message: "project created successfully",
+      project,
     });
   } catch (err) {
-      console.log(err);
+    console.log(err);
     res.status(500).json({
       status: 500,
       message: "something went wrong",
@@ -65,14 +65,22 @@ const addContributer = async (req, res) => {
         message: "Contributer not found",
       });
     }
-    
-    const isContributing = await Project.findOne({ _id: projectId, userId: req.userId,"contributers._id":contributerId });
-    
-    if(!isContributing){
-        return res.status(400).json({
-            status: 400,
-            message: "Contributer already added",
-          });
+
+    const isContributing = await Project.findOne(
+      {
+        _id: projectId,
+        userId: req.userId,
+      },
+      { contributers: 1 }
+    );
+
+    if (
+      isContributing.contributers.some((c) => c._id.toString() == contributerId)
+    ) {
+      return res.status(400).json({
+        status: 400,
+        message: "Contributer already added",
+      });
     }
 
     const projectUpdated = await Project.updateOne(
@@ -81,7 +89,6 @@ const addContributer = async (req, res) => {
         $push: { contributers: contributer },
       }
     );
-    console.log(projectUpdated);
 
     if (!projectUpdated) {
       throw new Error();
@@ -90,26 +97,30 @@ const addContributer = async (req, res) => {
     res.status(200).json({
       status: 200,
       message: "Contributer added successfully",
+      newContributer: contributer,
     });
   } catch (err) {
     res.status(500).json({
       status: 500,
-      message: "something went wrong",
+      message: "Contributer ID is wrong",
     });
   }
 };
 
 const getAllProjects = async (req, res) => {
   try {
-    const projects = await Project.find({
-      $or: [{ userId: req.userId }, { "contributers._id": req.userId }],
+    const allProjects = await Project.find();
+    const projects =  allProjects.filter(project =>{
+      return project.userId.toString() === req.userId || project.contributers.some(contributer => contributer._id.toString() === req.userId)
     });
-   res.status(200).json({
+
+    res.status(200).json({
+      status: 200,
       message: "Projects retreived successfully",
       projects,
     });
   } catch (err) {
-      console.log(err);
+    console.log(err);
     res.status(500).json({
       status: 500,
       message: "something went wrong",
@@ -122,10 +133,10 @@ const updateProjectContent = async (req, res) => {
     const { html, css, js } = req.body;
     const projectId = req.params.projectId;
 
-    if (!html || !css || !js) {
-      res.status(400).json({
+    if (!html && !css && !js) {
+      return res.status(400).json({
         status: 400,
-        message: "Bad request, html css and js must all be included",
+        message: "Bad request, html css and js must one of them be included",
       });
     }
 
@@ -136,9 +147,13 @@ const updateProjectContent = async (req, res) => {
       });
     }
 
-    const project = await Project.findById(projectId);
 
-    if (!project) {
+    const allProjects = await Project.find({_id: projectId});
+    const project =  allProjects.filter(project =>{
+      return project.userId.toString() === req.userId || project.contributers.some(contributer => contributer._id.toString() === req.userId)
+    });
+
+    if (project.length === 0) {
       return res.status(404).json({
         status: 404,
         message: "Project not found",
@@ -148,19 +163,20 @@ const updateProjectContent = async (req, res) => {
     const updatedProject = await Project.updateOne(
       { _id: projectId },
       {
-        html,
-        css,
-        js,
+        html: html ? html.trim() : "",
+        css: css ? css.trim() : "",
+        js: js ? js.trim() : "",
       }
     );
 
-    if(!updatedProject){
-        throw new Error();
+    if (!updatedProject) {
+      throw new Error();
     }
 
     res.status(200).json({
-        message : "project saved successfully"
-    })
+      status: 200,
+      message: "project saved successfully",
+    });
   } catch (err) {
     res.status(500).json({
       status: 500,
@@ -176,30 +192,35 @@ const getProjectById = async (req, res) => {
     if (!projectId) {
       return res.status(404).json({
         status: 404,
-        message: "Project not found",
+        message:
+          "something went wrong, Couldn't find the project you searching for",
       });
     }
 
-    const project = await Project.find({
-      _id: projectId,
-      $or: [{ userId: req.userId }, { "contributers._id": req.userId }],
+    const allProjects = await Project.find({_id: projectId});
+    const project =  allProjects.filter(project =>{
+      return project.userId.toString() === req.userId || project.contributers.some(contributer => contributer._id.toString() === req.userId)
     });
 
-    if (!project) {
+    if (project.length === 0) {
       return res.status(404).json({
         status: 404,
-        message: "Project not found",
+        message:
+          "something went wrong, Couldn't find the project you searching for",
       });
     }
+    
     res.status(200).json({
+      status: 200,
       message: "Project retreived successfully",
-      project,
+      project : project[0],
     });
   } catch (err) {
-      console.log(err);
+    console.log(err);
     res.status(500).json({
       status: 500,
-      message: "something went wrong",
+      message:
+        "something went wrong, Couldn't find the project you searching for",
     });
   }
 };
